@@ -11,11 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Install packages
 ```{r}
-#install.packages(readxl)
-#install.packages(tidyverse)
-#install.packages(tidytext)
-#install.packages(wordcloud)
-#install.packages(textdata)
+#install.packages("readxl")
+#install.packages("tidyverse")
+#install.packages("tidytext")
+#install.packages("wordcloud")
+#install.packages("textdata")
+#install.packages("topicmodels")
+#install.packages("reshape2")
 ```
 
 
@@ -25,6 +27,8 @@ library(readxl)
 library(tidyverse)
 library(tidytext)
 library(wordcloud)
+library(topicmodels)
+library(reshape2)
 ```
 
 ## Quick EDA
@@ -135,8 +139,29 @@ ggplot(word_counts_lou, aes(x = word2, y = n, fill = sentiment)) +
       coord_flip() +
       labs(title = "Sentiment Word Counts", x = "Words", y = "Count")
 ```
-## Topic Modeling
+## Topic Modeling with LDA
 ```{r}
+dtm_gpt<- tidy_tweets_gpt %>%
+      count(word,id)%>%
+      cast_dtm(id, word, n) %>%
+      as.matrix()
 
+lda_out <- LDA(dtm_gpt, k = 3, method = "Gibbs", control = list(seed = 2023))
+
+lda_topics <- lda_out %>%
+      tidy(matrix = "beta") %>%
+      arrange(desc(beta))
+
+lda_topics %>%
+      group_by(topic) %>%
+      top_n(15, beta) %>%
+      ungroup() %>%
+      mutate(term2 = fct_reorder(term, beta)) %>%
+      ggplot(., aes(x = term2, y = beta, fill = as.factor(topic))) +
+      geom_col(show.legend = F) +
+      facet_wrap(~topic, scales = "free") +
+      coord_flip() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(title = "Topics about ChatGPT", x = "Terms")
 ```
 
