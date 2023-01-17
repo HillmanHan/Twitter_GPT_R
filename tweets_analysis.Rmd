@@ -1,0 +1,142 @@
+---
+title: "tweets_data_analysis"
+author: "Hillman Han"
+date: '2023-01-16'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Install packages
+```{r}
+#install.packages(readxl)
+#install.packages(tidyverse)
+#install.packages(tidytext)
+#install.packages(wordcloud)
+#install.packages(textdata)
+```
+
+
+### Load packages
+```{r}
+library(readxl)
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+```
+
+## Quick EDA
+```{r}
+tweets_gpt <- read_excel("/Users/hillman/Desktop/TwitterGPT/Twitter_GPT_R/tweets_gpt.xlsx")
+head(tweets_gpt)
+summary(tweets_gpt)
+str(tweets_gpt)
+
+#keep only the date, not time
+tweets_gpt_date <- tweets_gpt %>%
+      mutate(date = as.Date(created_at)) %>%
+      select(-created_at)
+
+tweets_gpt_date %>%
+      group_by(date) %>%
+      summarise(n_tweets = n(), n_fav = sum(favorite_count), n_ret = sum(retweet_count)) %>%
+      tidyr::gather("id","value", 2:4) %>%
+      mutate(id = factor(id, c("n_tweets","n_fav","n_ret"))) %>%
+      ggplot(.,aes(date, value)) +
+      geom_col() +
+      facet_wrap(~id) +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+However, the data is not collected strictly on a day to day basis, the time series representation is flawed. That being said, if the rtweet package or other method can collect comprehensive data on a daily timeframe, not insights can be drawn with time series analysis. As a result, I will only focus on sentiment analysis of all texts from these 5 days.
+
+##Simple Text Mining
+```{r}
+#use tidytext to extract words
+tweets_gpt_tm <- tweets_gpt_date %>%
+      mutate(id = row_number()) %>% 
+      unnest_tokens(word,text) %>% 
+      anti_join(stop_words) %>%
+      count(word) %>%
+      arrange(desc(n))
+
+#customize stop words
+c_stop_words <- tribble(
+      ~word, ~ lexicon,
+      "t.co", "custom",
+      "https", "custom",
+      "1", "custom",
+      "2", "custom",
+      "3", "custom",
+      "4", "custom",
+      "5", "custom",
+      "2023", "custom")
+stop_words2 <- stop_words %>%
+      bind_rows(c_stop_words)
+
+#create a tidy word count df
+tidy_tweets_gpt <- tweets_gpt_date %>%
+      mutate(id = row_number()) %>% 
+      unnest_tokens(word,text) %>% 
+      anti_join(stop_words2)
+
+word_counts <- tidy_tweets_gpt %>%
+      count(word) %>%
+      top_n(15,n) %>%
+      mutate(word2 = fct_reorder(word,n)) 
+
+ggplot(word_counts,aes(x = word2, y = n)) +
+            geom_col(show.legend = F) +
+            coord_flip() +
+            ggtitle("Top 15 words about ChatGPT on Twitter") +
+            xlab("words") +
+            ylab("count")
+```
+
+## Sentiment Analysis
+```{r}
+#using afinn
+sentiment_review_afinn <-
+      tidy_tweets_gpt %>%
+      inner_join(get_sentiments("afinn"))
+#sentiment over days
+sentiment_review_afinn %>%
+      group_by(date) %>%
+      summarize(avg_sentiment = mean(value)) %>%
+      ggplot(aes(x = date, y = avg_sentiment)) +
+      geom_line() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+#sentiments for each tweet
+sentiment_review_afinn %>%
+      group_by(id) %>%
+      summarize(avg_sentiment = mean(value)) %>%
+      inner_join(tweets_gpt_date %>% mutate(id = row_number())) %>%
+      mutate(class = ifelse(avg_sentiment <= 0, "Negative", "Positive")) %>%
+      select(id, class, favorite_count,retweet_count,date) %>%
+      ggplot(., aes(x = favorite_count, y = retweet_count, color = class)) +
+      geom_point()
+      
+
+#using loughran
+sentiment_review_lou <-
+      tidy_tweets_gpt %>%
+      inner_join(get_sentiments("loughran"))
+word_counts_lou <- sentiment_review_lou %>%
+      filter(sentiment %in% c("Positive", "Negative")) %>%
+      count(word,sentiment) %>%
+      group_by(sentiment) %>%
+      top_n(10,n) %>%
+      ungroup() %>%
+      mutate(word2 = fct_reorder(word,n))
+ggplot(word_counts_lou, aes(x = word2, y = n, fill = sentiment)) +
+      geom_col(show.legend = F) +
+      facet_wrap(~sentiment, scales = "free") +
+      coord_flip() +
+      labs(title = "Sentiment Word Counts", x = "Words", y = "Count")
+```
+## Topic Modeling
+```{r}
+
+```
+
