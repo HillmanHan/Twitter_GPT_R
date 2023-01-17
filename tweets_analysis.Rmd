@@ -18,6 +18,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("textdata")
 #install.packages("topicmodels")
 #install.packages("reshape2")
+#install.packages("magrittr")
+install.packages("qdap")
 ```
 
 
@@ -29,6 +31,8 @@ library(tidytext)
 library(wordcloud)
 library(topicmodels)
 library(reshape2)
+library(magrittr)
+library(qdap) #remeber to have Java SE running first
 ```
 
 ## Quick EDA
@@ -98,7 +102,7 @@ ggplot(word_counts,aes(x = word2, y = n)) +
             ylab("count")
 ```
 
-## Sentiment Analysis
+## Sentiment Analysis with afinn and loughran
 ```{r}
 #using afinn
 sentiment_review_afinn <-
@@ -139,6 +143,16 @@ ggplot(word_counts_lou, aes(x = word2, y = n, fill = sentiment)) +
       coord_flip() +
       labs(title = "Sentiment Word Counts", x = "Words", y = "Count")
 ```
+
+## Sentiment analysis with Polarity on each day
+```{r}
+tweets_gpt_pol <- tweets_gpt_date %>%
+      mutate(date = as.factor(date)) %$% polarity(text, date)
+counts(tweets_gpt_pol)
+plot(tweets_gpt_pol)
+```
+
+
 ## Topic Modeling with LDA
 ```{r}
 dtm_gpt<- tidy_tweets_gpt %>%
