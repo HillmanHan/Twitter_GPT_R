@@ -1,11 +1,10 @@
 ---
 title: "tweets_data_analysis"
 author: "Hillman Han"
-date: '2023-01-16'
+date: '2023-01-17'
 output: pdf_document
 ---
 
-test 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -40,7 +39,7 @@ library(radarchart)
 
 ## Quick EDA
 ```{r}
-tweets_gpt <- read_excel("/Users/hillman/Desktop/TwitterGPT/Twitter_GPT_R/tweets_gpt_0108.xlsx")
+tweets_gpt <- read_excel("/Users/hillman/Desktop/TwitterGPT/Twitter_GPT_R/tweets_gpt_0117.xlsx")[1:9700,]
 head(tweets_gpt)
 summary(tweets_gpt)
 str(tweets_gpt)
@@ -60,7 +59,7 @@ tweets_gpt_date %>%
       facet_wrap(~id) +
       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
-However, the data is not collected strictly on a day to day basis, the time series representation is flawed. That being said, if the rtweet package or other method can collect comprehensive data on a daily timeframe, not insights can be drawn with time series analysis. As a result, I will only focus on sentiment analysis of all texts from these 5 days.
+This again shows that the rtweet package does not load tweets strictly on daily basis. But it provides us a window to summarize what is being posted in recent five days
 
 ##Simple Text Mining
 ```{r}

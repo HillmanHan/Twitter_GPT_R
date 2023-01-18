@@ -3,6 +3,7 @@ install.packages("reactable")
 install.packages("glue")
 install.packages("stringr")
 install.packages("httpuv")
+install.packages("writexl")
 
 library(rtweet)
 library(dplyr)
@@ -17,12 +18,10 @@ tweets_gpt <- tweet_df %>%
       select(created_at, text, favorite_count, retweet_count)
 
 library(reactable)
-
 reactable::reactable(tweets_gpt) #This creates a reactable table for dataframe
 
-install.packages("writexl")
 library(writexl)
-write_xlsx(tweets_gpt, "/Users/hillman/Desktop/TwitterGPT/Twitter_GPT_R/tweets_gpt.xlsx")
+write_xlsx(tweets_gpt, "/Users/hillman/Desktop/TwitterGPT/Twitter_GPT_R/tweets_gpt_0117.xlsx")
 
 
 
