@@ -19,7 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("topicmodels")
 #install.packages("reshape2")
 #install.packages("magrittr")
-install.packages("qdap")
+#install.packages("qdap")
+#install.packages("radarchart")
 ```
 
 
@@ -33,6 +34,7 @@ library(topicmodels)
 library(reshape2)
 library(magrittr)
 library(qdap) #remeber to have Java SE running first
+library(radarchart)
 ```
 
 ## Quick EDA
@@ -102,8 +104,14 @@ ggplot(word_counts,aes(x = word2, y = n)) +
             ylab("count")
 ```
 
-## Sentiment Analysis with afinn and loughran
+## Sentiment Analysis 
 ```{r}
+#using polarity
+tweets_gpt_pol <- tweets_gpt_date %>%
+      mutate(date = as.factor(date)) %$% polarity(text, date)
+counts(tweets_gpt_pol)
+plot(tweets_gpt_pol)[2]
+
 #using afinn
 sentiment_review_afinn <-
       tidy_tweets_gpt %>%
@@ -130,26 +138,29 @@ sentiment_review_afinn %>%
 sentiment_review_lou <-
       tidy_tweets_gpt %>%
       inner_join(get_sentiments("loughran"))
+
 word_counts_lou <- sentiment_review_lou %>%
-      filter(sentiment %in% c("Positive", "Negative")) %>%
+      filter(sentiment %in% c("positive", "negative")) %>%
       count(word,sentiment) %>%
       group_by(sentiment) %>%
       top_n(10,n) %>%
       ungroup() %>%
       mutate(word2 = fct_reorder(word,n))
+
 ggplot(word_counts_lou, aes(x = word2, y = n, fill = sentiment)) +
       geom_col(show.legend = F) +
       facet_wrap(~sentiment, scales = "free") +
       coord_flip() +
       labs(title = "Sentiment Word Counts", x = "Words", y = "Count")
-```
 
-## Sentiment analysis with Polarity on each day
-```{r}
-tweets_gpt_pol <- tweets_gpt_date %>%
-      mutate(date = as.factor(date)) %$% polarity(text, date)
-counts(tweets_gpt_pol)
-plot(tweets_gpt_pol)
+#using nrc to make radar chart
+sentiment_review_nrc <-
+      tidy_tweets_gpt %>%
+      inner_join(get_sentiments("nrc")) %>%
+      filter(!grepl("positive|negative",sentiment)) %>%
+      count(sentiment)
+
+chartJSRadar(sentiment_review_nrc)
 ```
 
 
